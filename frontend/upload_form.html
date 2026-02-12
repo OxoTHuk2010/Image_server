@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/upload_style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Upload Photos</h1>
+            <h2>Upload selfies, memes, or any fun pictures here.</h2>
+        </div>
+
+        <div class="content">
+            <div class="choose">
+                <a href="upload_form.html" class="text_upload">Upload</a>
+                <a href="images.html" class="text_images">Images</a>
+            </div>
+        
+
+
+
+            <div class="upload-form">
+                <label class="upload-box" id="drop-area">
+                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M32 32L24 24L16 32" stroke="#4676FB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M24 24V42" stroke="#4676FB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M40.7799 36.78C42.7306 35.7165 44.2716 34.0338 45.1597 31.9973C46.0477 29.9607 46.2323 27.6865 45.6843 25.5334C45.1363 23.3803 43.8869 21.471 42.1333 20.1069C40.3796 18.7428 38.2216 18.0015 35.9999 18H33.4799C32.8745 15.6585 31.7462 13.4847 30.1798 11.642C28.6134 9.7993 26.6496 8.3357 24.4361 7.36121C22.2226 6.38673 19.817 5.92672 17.4002 6.01576C14.9833 6.10481 12.6181 6.7406 10.4823 7.87533C8.34649 9.01006 6.49574 10.6142 5.06916 12.5672C3.64259 14.5201 2.6773 16.7711 2.24588 19.1508C1.81446 21.5305 1.92813 23.9771 2.57835 26.3065C3.22856 28.636 4.3984 30.7877 5.99992 32.6" stroke="#4676FB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M32 32L24 24L16 32" stroke="#4676FB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <div id="upload-status" class="upload-status" style="display: none;"></div>
+                    <div class="text-area">
+                        <p>Select a file or drag and drop here</p>
+                        <small>Only support .jpg, .png and gif. Maximum file size is 5MB </small>
+                    </div>
+                    <input type="file" id="fileInput" accept=".jpg,.jpeg,.gif,.png">
+                </label>
+            </div>
+
+            <div class="send_file">
+                <button id="sendFile">Browse your file</button>
+            </div>
+
+            <div class="current_upload">
+                <h2>Current upload</h2>
+                <div class="input-with-button">
+                    <input type="text" id="currentUploadInput" placeholder="https://" readonly>
+                    <button id="copyButton" class="copy-btn">COPY</button>
+                </div>
+                <img id="upload-preview" alt="preview" style="display:none;max-width:100%;margin-top:12px;border-radius:12px;" />
+            </div>
+        </div>
+
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/upload.js"></script>
+</body>
+</html>

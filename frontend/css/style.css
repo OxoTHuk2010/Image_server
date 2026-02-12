@@ -1,0 +1,58 @@
+:root {
+    --font-family: "Inter", sans-serif;
+    --second-family: "Plus Jakarta Sans", sans-serif;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background: #151515;
+    text-align: center;
+}
+
+.container> .header {
+    margin-top: 30px;
+}
+
+.header > h1 {
+    font-family: var(--font-family);
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 87%;
+    letter-spacing: -0.02em;
+    color: #ffff;
+}
+
+.header > h2 {
+    font-family: var(--font-family);
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 150%;
+    letter-spacing: -0.04em;
+    color: #fff;
+}
+
+.header > button {
+    margin-top: 40px;
+    background: #0060ff;
+    border: none;
+    border-radius: 7px;
+    padding: 12px 16px;
+    font-family: var(--font-family);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    color: #fff;
+}
+
+.header > button > a {
+    color: #fff;
+    text-decoration: none;
+}
+
+#image {
+    width: 400px;
+    height: 100%;
+    opacity: 1;
+    transition: opacity 0.8s ease-in-out;
+}
