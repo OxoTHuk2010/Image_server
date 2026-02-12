@@ -1,92 +1,70 @@
-//Получим иконку для файла
-
 function getFileIcon(filename){
-    const ext = filename.split('.').pop().toLowerCase()
-    const icons = {'jpg': '📷', 'png': '📷', 'jpeg': '📷', 'gif': '🎥'}
-    return icons[ext] || '🗂️'
+  const ext = (filename.split('.').pop() || '').toLowerCase();
+  const icons = {'jpg': '📷', 'png': '📷', 'jpeg': '📷', 'gif': '🎥'};
+  return icons[ext] || '🗂️';
 }
 
-function openImageInNewTab(base64Url) {
-    fetch(base64Url)
-        .then(res => res.blob())
-        .then(blob => {
-            const blobUrl = URL.createObjectURL(blob);
-            window.open(blobUrl, "_blank");
-        })
-        .catch(err => console.error("Failed to open image", err))
+function openImageInNewTab(url) {
+  window.open(url, "_blank");
 }
 
-//Создание эдемент изображения
 function createImageItem(image){
-    const item = document.createElement('div')
-    item.className = 'image-item'
-    item.dataset.id = image.id
+  const item = document.createElement('div');
+  item.className = 'image-item';
+  item.dataset.id = image.id;
 
-    const shotUrl = image.url.substring(0, 50) + '...'
-    const icon = getFileIcon(image.name)
+  const shortUrl = (image.url || '').length > 60 ? (image.url.substring(0, 60) + '...') : image.url;
+  const icon = getFileIcon(image.filename || image.original_name);
 
-    item.innerHTML = `
-    
-    <div class = 'image-name'>
-        <div class = 'image-icon'>${icon}</div>
-        <span title = "${image.name}">${image.name}</span>
+  item.innerHTML = `
+    <div class='image-name'>
+      <div class='image-icon'>${icon}</div>
+      <span title="${image.original_name || image.filename}">${image.original_name || image.filename}</span>
     </div>
 
-    <div class = "image-url-wrapper">
-        <a href = "#"
-            class = "image-url"
-            onclick="openImageInNewTab('${image.url}')"
-            title = "${image.url}">
-            ${shotUrl}
-        </a>
+    <div class="image-url-wrapper">
+      <a href="#" class="image-url" title="${image.url}">${shortUrl}</a>
     </div>
 
-    <div class = "image-delete">
-    <button class = 'delete-btn' onclick ="deleteImageById(${image.id})">
-    🗑️
-    </button>
+    <div class="image-delete">
+      <button class="delete-btn" title="Удалить">✖</button>
     </div>
+  `;
 
-    `
-    return item
- }
+  item.querySelector('.image-url').addEventListener('click', (e) => {
+    e.preventDefault();
+    openImageInNewTab(image.url);
+  });
 
- function showImages(){
-    const images = getAllImages()
-    const list = document.getElementById('images-list')
-    const empty = document.getElementById('empty-state')
-
-    if(images.length === 0){
-        list.innerHTML = '';
-        empty.style.display = 'block'
-        return
+  item.querySelector('.delete-btn').addEventListener('click', async () => {
+    if(!confirm('Удалить изображение?')) return;
+    try {
+      await API.remove(image.id);
+      item.remove();
+    } catch (e) {
+      alert(e.message || 'Ошибка удаления');
     }
-    empty.style.display = 'none'
+  });
 
-    list.innerHTML = ''
-    images.forEach(image => {
-        list.appendChild(createImageItem(image))
-    });
- }
-
-
-
-function deleteImageById(id){
-    const list = document.getElementById('images-list')
-    deleteImage(id)
-    const item = document.querySelector(`[data-id="${id}"]`)
-    const empty = document.getElementById('empty-state')
-
-    console.log(item)
-    if(item){
-        item.style.display = 'none'
-       if(getAllImages().length === 0){
-         empty.style.display = 'block'
-       }
-
-    }
+  return item;
 }
 
+async function loadImages(){
+  const container = document.getElementById('images-list');
+  if(!container) return;
 
+  container.innerHTML = '';
+  try {
+    const data = await API.list(1, 200);
+    const images = data.images || [];
+    if(images.length === 0){
+      container.innerHTML = '<div style="padding:12px;">Пока нет загруженных изображений.</div>';
+      return;
+    }
+    images.forEach(img => container.appendChild(createImageItem(img)));
+  } catch(e) {
+    container.innerHTML = `<div style="padding:12px;color:#b00;">Ошибка: ${e.message}</div>`;
+  }
+}
 
- document.addEventListener('DOMContentLoaded', showImages)
+document.addEventListener('DOMContentLoaded', loadImages);

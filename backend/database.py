@@ -1,23 +1,35 @@
-import psycopg2
-
+import time
+import random
 from typing import List, Tuple, Optional
+
+import psycopg2
+from psycopg2.extras import RealDictCursor
+
 from config import Config
 from models import Image
 from utils import log_info, log_error, log_succes
-from random import random
 
 class Database():
 
     @staticmethod
-    def get_connection():
-        return psycopg2.connect(Config.DATABASE_URL)
+    def get_connection(retries: int = 30, delay_sec: float = 1.0):
+        """Соединение с ретраями — чтобы контейнер переживал старт Postgres."""
+        last_err = None
+        for _ in range(retries):
+            try:       
+                return psycopg2.connect(Config.DATABASE_URL, cursor_factory=RealDictCursor)
+            except Exception as e:
+                last_err = e
+                time.sleep(delay_sec)
+        raise Exception(f'Не удалось подключиться к БД: {last_err}')
     
     @staticmethod
-    def init_db():
+    def init_db() -> None:
         conn = Database.get_connection()
         try:
             with conn.cursor() as cursor:
-                cursor.execute("""
+                cursor.execute(
+                    """
                     CREATE TABLE IF NOT EXISTS images(
                         id SERIAL PRIMARY KEY,
                         filename TEXT NOT NULL UNIQUE,
@@ -25,12 +37,14 @@ class Database():
                         size INTEGER NOT NULL,
                         upload_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         file_type TEXT NOT NULL
-                        );
-                """)
-                conn.commit()
-                log_info('База данный инициирована')
+                    );
+                    """
+                )
+            conn.commit()
+            log_info('База данный инициирована (Таблица images готова).')
         except Exception as e:
-            log_error(f'Error init {e}')
+            log_error(f'Ошибка инициализации БД: {e}')
+            raise
         finally:
             conn.close()
 
@@ -39,19 +53,21 @@ class Database():
         conn = Database.get_connection()
         try:
             with conn.cursor() as cursor:
-                cursor.execute("""
+                cursor.execute(
+                    """
                     INSERT INTO images (filename, original_name, size, file_type)
                     VALUES (%s, %s, %s, %s)
                     RETURNING id;
-                """, (image.filename, image.original_name, image.size, image.file_type))
+                    """, (image.filename, image.original_name, image.size, image.file_type),
+                )
                 image_id = cursor.fetchone()[0]
-                conn.commit()
-                log_succes(f'Изображение сохранено в БД: {image.filename}, ID: {image_id}')
+            conn.commit()
+            log_succes(f'Изображение сохранено в БД: {image.filename}, ID: {image_id}')
 
-                return True, image_id
+            return True, image_id
             
         except Exception as e:
-            log_error(f'Save error in DB {e}')
+            log_error(f"Ошибка сохранения в БД: {e}")
             return False, None
         finally:
             conn.close()
@@ -60,44 +76,48 @@ class Database():
     def get_images(page: int = 1 , per_page: int = Config.ITEM_PER_PAGE) -> Tuple[List[Image], int]:
         conn = Database.get_connection()
         try:
+            page = max(1, int(page))
+            per_page = max(1, int(per_page))
             offset = (page - 1) * per_page
 
             with conn.cursor() as cursor:
                 cursor.execute("SELECT * FROM images ORDER BY upload_time DESC LIMIT %s OFFSET %s", (per_page, offset))
                 rows = cursor.fetchall()
-                images = [
-                    Image(
-                        id = row['id'],
-                        filename = row['filename'],
-                        original_name = row['original_name'],
-                        size = row['size'],
-                        upload_time = row['upload_time'],
-                        file_type = row['file_type']
-                    )
-                    for row in rows
-                ]
+
                 cursor.execute('SELECT COUNT(*) as total FROM images')
                 total = cursor.fetchone()['total']
 
-                return images, total
+            images = [
+                Image(
+                    id = row['id'],
+                    filename = row['filename'],
+                    original_name = row['original_name'],
+                    size = row['size'],
+                    upload_time = row['upload_time'],
+                    file_type = row['file_type']
+                )
+                for row in rows
+            ]
+
+            return images, total
             
         except Exception as e:
-            log_error(f'Error get image {e}')
+            log_error(f"Ошибка получения списка изображений: {e}")
             return [], 0
         finally:
             conn.close()
 
     @staticmethod
-    def get_random() -> Image:
+    def get_random() -> Optional[Image]:
+        """Случайное изображение."""
         conn = Database.get_connection()
         try:
             with conn.cursor() as cursor:
-                cursor.execute("SELECT COUNT(id) as total FROM images")
-                total = cursor.fetchone()['total']
+                cursor.execute("SELECT * FROM images ORDER BY random() LIMIT 1;")
+                row = cursor.fetchone()
+                if not row:
+                    return None
 
-                rand = random.randint(1, total)
-                cursor.execute("SELECT * FROM images WHERE id = %s", (rand))
-                row = cursor.fetchall()
                 image = Image(
                     id = row['id'],
                     filename = row['filename'],
@@ -109,8 +129,8 @@ class Database():
             return image
             
         except Exception as e:
-            log_error(f'Error get random image {e}')
-            return {}
+            log_error(f"Ошибка получения случайного изображения: {e}")
+            return None
         finally:
             conn.close()
     
@@ -119,20 +139,18 @@ class Database():
         conn = Database.get_connection()
         try:
             with conn.cursor() as cursor:
-                cursor.execute("SELECT filename FROM images WHERE id = %s", (image_id,))
+                cursor.execute("SELECT filename FROM images WHERE id = %s;", (image_id,))
                 row = cursor.fetchone()
                 if not row:
                     return False, None
-                
-                filename = row[0]
-                cursor.execute('DELETE FROM images WHERE id = %s', (image_id,))
-                conn.commit()
 
-                log_succes(f"Изображение удалено из БД: {filename}")
-                return True, filename
+                filename = row["filename"]
+                cursor.execute("DELETE FROM images WHERE id = %s;", (image_id,))
+            conn.commit()
+            log_succes(f"Изображение удалено из БД: {filename}")
+            return True, filename
         except Exception as e:
-            log_error(f'Error deleted from DB {e}')
+            log_error(f"Ошибка удаления из БД: {e}")
             return False, None
         finally:
             conn.close()
-    

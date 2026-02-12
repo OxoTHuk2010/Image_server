@@ -4,118 +4,89 @@ const ALLOWED_MIMETYPES = ['image/jpeg', 'image/png', 'image/gif'];
 let currentUrl = '';
 
 function showStatus(message, type){
-    const status = document.getElementById('upload-status')
-    if(!status) return;
+  const status = document.getElementById('upload-status');
+  if(!status) return;
 
-    status.textContent = message
-    status.className = `upload-status ${type}`
-    status.style.display = 'block'
+  status.textContent = message;
+  status.className = `upload-status ${type}`;
+  status.style.display = 'block';
 
-    if (type === 'success') {
-        setTimeout(() => {
-            status.style.display = 'none'
-        }, 3000)
-    }
+  if (type === 'success') {
+    setTimeout(() => status.style.display = 'none', 3000);
+  }
 }
 
 function validateFile(file){
-    if(!ALLOWED_MIMETYPES.includes(file.type)){
-        showStatus('Onle .jpg .png and .gif', 'error')
-        return false;
-    }
-
-    if(file.size > MAX_SIZE){
-        showStatus('File too large! Maximum file size is 5 MB.', 'error')
-        return false;
-    }
-
-    return true;
+  if(!ALLOWED_MIMETYPES.includes(file.type)){
+    showStatus('Поддерживаются только JPG/PNG/GIF.', 'error');
+    return false;
+  }
+  if(file.size > MAX_SIZE){
+    showStatus('Файл слишком большой. Максимум 5 MB.', 'error');
+    return false;
+  }
+  return true;
 }
 
 async function handleFile(file){
-    if(!file || !validateFile(file)) return;
+  if(!file || !validateFile(file)) return;
 
-    showStatus('Uploading....', 'info')
+  showStatus('Загрузка...', 'info');
 
-    try{
-        const base64 = await fileToBase64(file)
-        const success = saveImage(file.name, base64, file.size)
+  try{
+    const image = await API.upload(file);
+    currentUrl = image.url;
 
-        if(success) {
-            showStatus('Upload successful!', 'success')
+    const input = document.getElementById('currentUploadInput');
+    if(input) input.value = currentUrl;
 
-            const input = document.getElementById('currentUploadInput')
-            if(input){
-                input.value = base64.substring(0, 50 ) + '...'
-                currentUrl = base64
-            }
-            document.getElementById('fileInput').value = ''
-        }
-        else{
-            showStatus('Upload failed. Please try again', 'error')
-        }
+    const preview = document.getElementById('upload-preview');
+    if (preview) {
+      preview.src = `${currentUrl}?t=${Date.now()}`;
+      preview.style.display = 'block';
     }
-    catch(error){
-        showStatus('Upload failed. Please try again', 'error')
-    }
+
+    showStatus('Загрузка успешна!', 'success');
+  } catch (e) {
+    showStatus(e.message || 'Ошибка загрузки', 'error');
+  }
 }
 
-async function copyUrl() {
-    if(!currentUrl) return;
-
-    try{
-        await navigator.clipboard.writeText(currentUrl)
-        showStatus('URL copied', 'success')
-
-        const btn = document.getElementById('copyButton')
-        const oldText = btn.textContent
-        btn.textContent = 'Copied'
-        setTimeout(()=> btn.textContent = oldText, 2000)
-    }
-    catch{
-        showStatus('Failed to copy URL', 'error')
-    }
+function copyCurrentUrl(){
+  if(!currentUrl) return;
+  navigator.clipboard.writeText(currentUrl).then(
+    () => showStatus('Ссылка скопирована в буфер обмена.', 'success'),
+    () => showStatus('Не удалось скопировать ссылку.', 'error')
+  );
 }
 
+// Drag&Drop + input
 document.addEventListener('DOMContentLoaded', () => {
-    const dropArea = document.getElementById('drop-area')
-    const fileInput = document.getElementById('fileInput')
-    const browseBtn = document.querySelector('.send_file button')
-    const copyBtn = document.getElementById('copyButton')
+  const input = document.getElementById('file-input') || document.getElementById('fileInput');
+  const dropArea = document.getElementById('drop-area');
+  const copyBtn = document.getElementById('copy-url-btn') || document.getElementById('copyButton');
 
-    dropArea.addEventListener('dragover', (e) => {
-        e.preventDefault()
-        dropArea.classList.add('dragover')
-    })
+  if (copyBtn) copyBtn.addEventListener('click', copyCurrentUrl);
 
-    dropArea.addEventListener('dragleave', (e) => {
-        e.preventDefault()
-        dropArea.classList.remove('dragover')
-    })
+  if (input) {
+    input.addEventListener('change', (e) => {
+      const f = e.target.files && e.target.files[0];
+      handleFile(f);
+    });
+  }
 
+  if (dropArea) {
+    ['dragenter','dragover'].forEach(evt => dropArea.addEventListener(evt, (e) => {
+      e.preventDefault(); e.stopPropagation();
+      dropArea.classList.add('dragover');
+    }));
+    ['dragleave','drop'].forEach(evt => dropArea.addEventListener(evt, (e) => {
+      e.preventDefault(); e.stopPropagation();
+      dropArea.classList.remove('dragover');
+    }));
     dropArea.addEventListener('drop', (e) => {
-        e.preventDefault()
-        dropArea.classList.add('dragover')
-        if (e.dataTransfer.files[0]){
-            handleFile(e.dataTransfer.files[0])
-        }
-    })
-
-    fileInput.addEventListener('change', (e) => {
-        if(e.target.files[0]){
-            handleFile(e.target.files[0])
-        }
-    })
-
-    browseBtn.addEventListener('click', (e) =>{
-        e.preventDefault();
-        e.stopPropagation();
-        dropArea.classList.remove('dragover')
-        fileInput.click()
-    } )
-
-    if (copyBtn) {
-        copyBtn.addEventListener('click', copyUrl)
-    }
-
-})
+      const f = e.dataTransfer.files && e.dataTransfer.files[0];
+      handleFile(f);
+    });
+  }
+});

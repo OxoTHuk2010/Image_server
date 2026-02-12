@@ -6,11 +6,11 @@ load_dotenv()
 class Config:
 
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-key')
-    DEBUG = os.getenv('DEBUG', 'False').lower()
+    DEBUG = os.getenv('DEBUG', 'false').strip().lower() in ('1','true','yes','on')
 
     #Настройка ограничений по файлам
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024 #5mb
-    ALLOWED_EXTENCIONS = {'.jpeg', '.jpg', '.png', '.gif'}
+    ALLOWED_EXTENSIONS = {'.jpeg', '.jpg', '.png', '.gif'}
     ALLOWED_MIME_TYPES = {
         'image/jpeg',
         'image/png',

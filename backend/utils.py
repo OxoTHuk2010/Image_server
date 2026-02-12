@@ -77,19 +77,19 @@ def save_file(filename, file_content):
         log_error(error_msg)
         return False, error_msg
     
-def delete_file(filename):
+def delete_file(filename) -> bool:
         try:
-            original_name = secure_filename(filename)
-            new_filename = generate_unique_filename(original_name)
-            file_path = os.path.join(Config.UPLOAD_FOLDER, new_filename)
+            save_name = secure_filename(filename)
+            file_path = os.path.join(Config.UPLOAD_FOLDER, save_name)
 
             if os.path.exists(file_path):
                 os.remove(file_path)
+                log_succes(f'Файл удалён: {save_name}')
                 return True
+            log_error(f'Файл для удаления не найден: {save_name}')
             return False
         except Exception as e:
-            error_msg = f'Ошибка удажения файла: {new_filename}'
-            log_error(error_msg)
+            log_error(f'Ошибка удажения файла: {save_name}: {e}')
             return False
 
 

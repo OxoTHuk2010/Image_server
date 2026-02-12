@@ -30,4 +30,4 @@ def create_app():
 if __name__ == '__main__':
     print("Запуск сервера")
     app = create_app()
-    app.run(debug=Config.DEBUG, host='0.0.0.0', port=8000)
+    app.run(debug=bool(Config.DEBUG), host='0.0.0.0', port=8000)
