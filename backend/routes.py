@@ -11,7 +11,7 @@ from utils import (
     log_error,
     log_succes
 )
-from database import Database, delete_image_db, get_images
+from database import Database
 
 def register_routes(app):
     @app.get('/')
@@ -78,7 +78,7 @@ def register_routes(app):
             }), 201
 
         except Exception as e:
-            log_error(f"Ошибка загрузки файла: {e}")
+            log_error(f"Ошибка загрузки файла: {e}", exc_info=True)
             return jsonify({'error': str(e)}), 500
         
 
@@ -111,7 +111,7 @@ def register_routes(app):
     @app.get("/api/random")
     def random_image():
         """Случайное изображение для слайдшоу."""
-        img = Database.get_random_image()
+        img = Database.get_random()
         if not img:
             return jsonify({"success": True, "image": None}), 200
         return jsonify({"success": True, "image": img.to_dict()}), 200

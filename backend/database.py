@@ -2,6 +2,7 @@ import time
 import random
 from typing import List, Tuple, Optional
 
+from psycopg2 import pool
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
@@ -10,19 +11,44 @@ from models import Image
 from utils import log_info, log_error, log_succes
 
 class Database():
+    _pool = None
 
     @staticmethod
-    def get_connection(retries: int = 30, delay_sec: float = 1.0):
+    def init_pool(min_conn=1, max_conn=10):
+        """Инициализация пула соединений."""
+        last_err = None
+        for _ in range(60): # Попытки подключения в течение ~2 минут
+            try:
+                Database._pool = pool.SimpleConnectionPool(
+                    min_conn, max_conn, dsn=Config.DATABASE_URL, cursor_factory=RealDictCursor
+                )
+                log_info("Пул соединений с БД успешно инициализирован.")
+                return
+            except psycopg2.OperationalError as e:
+                last_err = e
+                time.sleep(2)
+        raise Exception(f'Не удалось инициализировать пул соединений: {last_err}')
+
+    @staticmethod
+    def get_connection(retries: int = 60, delay_sec: float = 2.0):
         """Соединение с ретраями — чтобы контейнер переживал старт Postgres."""
         last_err = None
         for _ in range(retries):
             try:       
-                return psycopg2.connect(Config.DATABASE_URL, cursor_factory=RealDictCursor)
+                if Database._pool:
+                    return Database._pool.getconn()
+                raise Exception("Пул соединений не инициализирован.")
             except Exception as e:
                 last_err = e
                 time.sleep(delay_sec)
         raise Exception(f'Не удалось подключиться к БД: {last_err}')
     
+    @staticmethod
+    def put_connection(conn):
+        """Возвращает соединение обратно в пул."""
+        if Database._pool:
+            Database._pool.putconn(conn)
+
     @staticmethod
     def init_db() -> None:
         conn = Database.get_connection()
@@ -46,7 +72,7 @@ class Database():
             log_error(f'Ошибка инициализации БД: {e}')
             raise
         finally:
-            conn.close()
+            Database.put_connection(conn)
 
     @staticmethod
     def save_image(image: Image) -> Tuple[bool, Optional[int]]:
@@ -60,17 +86,18 @@ class Database():
                     RETURNING id;
                     """, (image.filename, image.original_name, image.size, image.file_type),
                 )
-                image_id = cursor.fetchone()[0]
+                image_id = cursor.fetchone()['id']
             conn.commit()
             log_succes(f'Изображение сохранено в БД: {image.filename}, ID: {image_id}')
 
             return True, image_id
             
         except Exception as e:
+            conn.rollback()
             log_error(f"Ошибка сохранения в БД: {e}")
             return False, None
         finally:
-            conn.close()
+            Database.put_connection(conn)
 
     @staticmethod
     def get_images(page: int = 1 , per_page: int = Config.ITEM_PER_PAGE) -> Tuple[List[Image], int]:
@@ -102,10 +129,11 @@ class Database():
             return images, total
             
         except Exception as e:
+            conn.rollback()
             log_error(f"Ошибка получения списка изображений: {e}")
             return [], 0
         finally:
-            conn.close()
+            Database.put_connection(conn)
 
     @staticmethod
     def get_random() -> Optional[Image]:
@@ -129,10 +157,11 @@ class Database():
             return image
             
         except Exception as e:
+            conn.rollback()
             log_error(f"Ошибка получения случайного изображения: {e}")
             return None
         finally:
-            conn.close()
+            Database.put_connection(conn)
     
     @staticmethod
     def delete_image_db(image_id: int) -> Tuple[bool, Optional[str]]:
@@ -150,7 +179,8 @@ class Database():
             log_succes(f"Изображение удалено из БД: {filename}")
             return True, filename
         except Exception as e:
+            conn.rollback()
             log_error(f"Ошибка удаления из БД: {e}")
             return False, None
         finally:
-            conn.close()
+            Database.put_connection(conn)

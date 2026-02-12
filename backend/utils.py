@@ -24,8 +24,8 @@ def setup_logging():
 def log_info(message):
     logging.info(message)
 
-def log_error(message):
-    logging.error(message)
+def log_error(message, exc_info=False):
+    logging.error(message, exc_info=exc_info)
 
 def log_succes(message):
     logging.info(f'Успех: {message}')
@@ -43,7 +43,7 @@ def get_file_extension(filename):
 
 def is_allowed_extension(filename):
     ext = get_file_extension(filename)
-    return ext in Config.ALLOWED_EXTENCIONS
+    return ext in Config.ALLOWED_EXTENSIONS
 
 def is_valid_file_size(file_size):
     return 0 < file_size <= Config.MAX_CONTENT_LENGTH
@@ -91,8 +91,3 @@ def delete_file(filename) -> bool:
         except Exception as e:
             log_error(f'Ошибка удажения файла: {save_name}: {e}')
             return False
-
-
-
-
-

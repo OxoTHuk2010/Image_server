@@ -25,6 +25,8 @@ services:
       - ./backup:/app/backup
     ports:
       - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:admin@postgres:5432/image_db
     depends_on:
       postgres:
         condition: service_healthy

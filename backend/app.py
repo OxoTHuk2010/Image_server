@@ -20,6 +20,7 @@ def create_app():
     with app.app_context():
         print('Инициализация рабочих директорий')
         ensure_directories()
+        Database.init_pool()
         Database.init_db()
         print('Настройка логирования')
         setup_logging()
