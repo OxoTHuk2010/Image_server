@@ -21,7 +21,9 @@ class Config:
     DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:admin@postgres:5432/image_db')
 
     #Настройка пагинации
-    ITEM_PER_PAGE = 10
+    ITEM_PER_PAGE = 10  # Значение по умолчанию
+    MIN_ITEMS_PER_PAGE = 10  # Минимальное количество элементов на странице
+    MAX_DISPLAY_ITEMS = 50  # Максимальное количество элементов на странице
 
     #Настройка рабочих директорий
     UPLOAD_FOLDER = 'images'

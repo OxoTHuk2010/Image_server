@@ -199,3 +199,99 @@ body {
 .empty-state a:hover{
     opacity: 0.8;
 }
+
+/* \u041f\u0430\u0433\u0438\u043d\u0430\u0446\u0438\u044f */
+.pagination-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f5f5f5;
+    border-radius: 7px;
+    gap: 20px;
+}
+
+.items-per-page {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.items-per-page label {
+    font-family: var(--font-family);
+    font-weight: 500;
+    font-size: 14px;
+    color: #0b0b0b;
+}
+
+.items-per-page select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    font-family: var(--font-family);
+    cursor: pointer;
+    background: #fff;
+    transition: border-color 0.2s ease;
+}
+
+.items-per-page select:hover {
+    border-color: #0060ff;
+}
+
+.items-per-page select:focus {
+    outline: none;
+    border-color: #0060ff;
+    box-shadow: 0 0 0 2px rgba(0, 96, 255, 0.1);
+}
+
+.page-info {
+    font-family: var(--font-family);
+    font-weight: 500;
+    font-size: 14px;
+    color: #0b0b0b;
+}
+
+.pagination-buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 20px;
+    padding: 15px;
+    background: #f5f5f5;
+    border-radius: 7px;
+}
+
+.pagination-btn {
+    padding: 10px 16px;
+    background: #0060ff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    font-family: var(--font-family);
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+    transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    opacity: 0.85;
+}
+
+.pagination-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+#page-display {
+    font-family: var(--font-family);
+    font-weight: 600;
+    font-size: 14px;
+    color: #0b0b0b;
+    min-width: 150px;
+    text-align: center;
+}

@@ -89,5 +89,5 @@ def delete_file(filename) -> bool:
             log_error(f'Файл для удаления не найден: {save_name}')
             return False
         except Exception as e:
-            log_error(f'Ошибка удажения файла: {save_name}: {e}')
+            log_error(f'Ошибка удаления файла: {save_name}: {e}')
             return False

@@ -49,22 +49,89 @@ function createImageItem(image){
   return item;
 }
 
-async function loadImages(){
-  const container = document.getElementById('images-list');
-  if(!container) return;
+class PaginationManager {
+  constructor() {
+    this.currentPage = 1;
+    this.itemsPerPage = 50;
+    this.totalItems = 0;
+    this.maxPerPage = 50;
+    this.minPerPage = 10;  // Будет обновлено из backend
+  }
 
-  container.innerHTML = '';
-  try {
-    const data = await API.list(1, 200);
-    const images = data.images || [];
-    if(images.length === 0){
-      container.innerHTML = '<div style="padding:12px;">Пока нет загруженных изображений.</div>';
-      return;
+  get totalPages() {
+    return Math.ceil(this.totalItems / this.itemsPerPage);
+  }
+
+  async loadPage() {
+    const container = document.getElementById('images-list');
+    const pageDisplay = document.getElementById('page-display');
+    const pageCounter = document.getElementById('page-counter');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+
+    try {
+      const data = await API.list(this.currentPage, this.itemsPerPage);
+      const images = data.images || [];
+      this.totalItems = data.total || 0;
+      this.maxPerPage = data.max_per_page || 50;
+      this.minPerPage = data.min_per_page || 10; // Получаем минимум из backend
+
+      container.innerHTML = '';
+      if (images.length === 0) {
+        container.innerHTML = '<div style="padding:12px;">На этой странице нет изображений.</div>';
+      } else {
+        images.forEach(img => container.appendChild(createImageItem(img)));
+      }
+
+      // Обновляем информацию о странице
+      pageDisplay.textContent = `Страница ${this.currentPage} из ${this.totalPages}`;
+      pageCounter.textContent = `Страница ${this.currentPage} (всего: ${this.totalItems})`;
+
+      // Управляем кнопками
+      prevBtn.disabled = this.currentPage === 1;
+      nextBtn.disabled = this.currentPage >= this.totalPages;
+    } catch (e) {
+      container.innerHTML = `<div style="padding:12px;color:#b00;">Ошибка: ${e.message}</div>`;
     }
-    images.forEach(img => container.appendChild(createImageItem(img)));
-  } catch(e) {
-    container.innerHTML = `<div style="padding:12px;color:#b00;">Ошибка: ${e.message}</div>`;
+  }
+
+  setItemsPerPage(count) {
+    // Валидируем значение согласно параметрам backend
+    if (count < this.minPerPage) count = this.minPerPage;
+    if (count > this.maxPerPage) count = this.maxPerPage;
+    
+    this.itemsPerPage = count;
+    this.currentPage = 1;  // Возвращаемся на первую страницу
+    this.loadPage();
+  }
+
+  nextPage() {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+      this.loadPage();
+    }
+  }
+
+  prevPage() {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      this.loadPage();
+    }
   }
 }
 
-document.addEventListener('DOMContentLoaded', loadImages);
+const paginationManager = new PaginationManager();
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Загружаем первую страницу
+  paginationManager.loadPage();
+
+  // Обработчики для кнопок пагинации
+  document.getElementById('next-btn').addEventListener('click', () => paginationManager.nextPage());
+  document.getElementById('prev-btn').addEventListener('click', () => paginationManager.prevPage());
+
+  // Обработчик для выбора количества элементов на странице
+  document.getElementById('items-select').addEventListener('change', (e) => {
+    paginationManager.setItemsPerPage(parseInt(e.target.value));
+  });
+});

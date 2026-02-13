@@ -21,8 +21,23 @@
         </div>
         
         <!--Список изображений-->
-
         <div class="images-container">
+            <!-- Контролы пагинации -->
+            <div class="pagination-controls">
+                <div class="items-per-page">
+                    <label for="items-select">На странице:</label>
+                    <select id="items-select">
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="30">30</option>
+                        <option value="50" selected>50</option>
+                    </select>
+                </div>
+                <div class="page-info">
+                    <span id="page-counter">Страница 1</span>
+                </div>
+            </div>
+
             <div class="images-header">
                 <div class="header-name">Name</div>
                 <div class="header-url">Url</div>
@@ -39,7 +54,12 @@
                 <a href="upload_form.html">Upload your first image</a>
             </div>
 
-
+            <!-- Кнопки навигации по страницам -->
+            <div class="pagination-buttons">
+                <button id="prev-btn" class="pagination-btn" disabled>← Предыдущая</button>
+                <span id="page-display">Страница 1</span>
+                <button id="next-btn" class="pagination-btn">Следующая →</button>
+            </div>
         </div>
     </div>
 

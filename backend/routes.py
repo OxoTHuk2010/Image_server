@@ -30,19 +30,27 @@ def register_routes(app):
             return jsonify({"error": "Файл не выбран"}), 400
 
         file = request.files["file"]
+
+        #Проверка наличия файла и его имени
         if not file or file.filename == "":
             return jsonify({"error": "Файл не найден"}), 400
-
+        
+        #Проверка расширения файла
         if not is_allowed_extension(file.filename):
             return jsonify({"error": "Неподдерживаемое расширение файла"}), 400
+        
+        # Проверка MIME-типа файла
+        if file.content_type not in Config.ALLOWED_MIME_TYPES:
+            return jsonify({"error": "Неподдерживаемый тип файла"}), 400
         
         try:
             file_data = file.read()
             file_size = len(file_data)
 
+            #Проверка размера файла
             if file_size > Config.MAX_CONTENT_LENGTH:
                 max_size = format_file_size(Config.MAX_CONTENT_LENGTH)
-                return jsonify({'error': f"Файл слишком большй. Максимальный размер файла {max_size}"}), 400
+                return jsonify({'error': f"Файл слишком большой. Максимальный размер файла {max_size}"}), 400
             
             success, result = save_file(file.filename, file_data)
             if not success:
@@ -86,9 +94,12 @@ def register_routes(app):
     def delete_image(image_id: int):
         """Удаление изображения по ID."""
         success, filename = Database.delete_image_db(image_id)
+
+        # Если изображение не найдено в БД, возвращаем 404
         if not success or not filename:
             return jsonify({"error": "Изображение не найдено"}), 404
 
+        # Удаляем файл с диска
         if not delete_file(filename):
             return jsonify({"error": "Не удалось удалить файл с диска"}), 500
 
@@ -97,16 +108,30 @@ def register_routes(app):
     @app.get('/api/images')
     def list_image():
         """Список изображений с пагинацией: /api/images?page=1&per_page=10"""
-        page = request.args.get("page", "1")
-        per_page = request.args.get("per_page", str(Config.ITEM_PER_PAGE))
-        images, total = Database.get_images(int(page), int(per_page))
-        return jsonify({
-            "success": True,
-            "images": [img.to_dict() for img in images],
-            "total": total,
-            "page": int(page),
-            "per_page": int(per_page),
-        }), 200
+        try:
+            page = int(request.args.get("page", "1"))
+            per_page = int(request.args.get("per_page", str(Config.ITEM_PER_PAGE)))
+            
+            # Валидация ПАГИНАЦИИ
+            if page < 1:
+                page = 1
+            if per_page < Config.MIN_ITEMS_PER_PAGE:
+                per_page = Config.MIN_ITEMS_PER_PAGE
+            if per_page > Config.MAX_DISPLAY_ITEMS:
+                per_page = Config.MAX_DISPLAY_ITEMS
+            
+            images, total = Database.get_images(page, per_page)
+            return jsonify({
+                "success": True,
+                "images": [img.to_dict() for img in images],
+                "total": total,
+                "page": page,
+                "per_page": per_page,
+                "max_per_page": Config.MAX_DISPLAY_ITEMS,
+                "min_per_page": Config.MIN_ITEMS_PER_PAGE,
+            }), 200
+        except (ValueError, TypeError):
+            return jsonify({"error": "Неверные параметры пагинации"}), 400
 
     @app.get("/api/random")
     def random_image():
