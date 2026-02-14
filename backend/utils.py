@@ -10,18 +10,18 @@ from config import Config
 
 def setup_logging():
     """Настраивает базовую конфигурацию логирования для проекта."""
-    log_format = '[%(asctime)s] %(levelname)s: %(message)s'
-    date_format = '%Y-%m-%d %H:%M:%S'
-    log_file = os.path.join(Config.LOGS_DIR, 'app.log')
+    log_format = "[%(asctime)s] %(levelname)s: %(message)s"
+    date_format = "%Y-%m-%d %H:%M:%S"
+    log_file = os.path.join(Config.LOGS_DIR, "app.log")
 
     logging.basicConfig(
         level=logging.INFO,
         format=log_format,
         datefmt=date_format,
         handlers=[
-            logging.FileHandler(log_file, encoding='utf-8'),
-            logging.StreamHandler()
-        ]
+            logging.FileHandler(log_file, encoding="utf-8"),
+            logging.StreamHandler(),
+        ],
     )
 
 
@@ -37,12 +37,12 @@ def log_error(message: str, exc_info: bool = False):
 
 def log_success(message: str):
     """Логирует сообщение об успешном выполнении операции."""
-    logging.info(f'Успех: {message}')
+    logging.info(f"Успех: {message}")
 
 
 def ensure_directories():
     """Проверяет наличие и при необходимости создает рабочие директории."""
-    print(f'CWD: {os.getcwd()}')
+    print(f"CWD: {os.getcwd()}")
     os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
     os.makedirs(Config.BACKUP_DIR, exist_ok=True)
     os.makedirs(Config.LOGS_DIR, exist_ok=True)
@@ -98,10 +98,10 @@ def format_file_size(size_bytes: int) -> str:
         Строка с отформатированным размером.
     """
     if size_bytes < 1024:
-        return f'{size_bytes} B'
+        return f"{size_bytes} B"
     if size_bytes < 1024 * 1024:
-        return f'{size_bytes / 1024:.2f} KB'
-    return f'{size_bytes / (1024 * 1024):.2f} MB'
+        return f"{size_bytes / 1024:.2f} KB"
+    return f"{size_bytes / (1024 * 1024):.2f} MB"
 
 
 def generate_unique_filename(original_filename: str) -> str:
@@ -116,7 +116,7 @@ def generate_unique_filename(original_filename: str) -> str:
     """
     ext = get_file_extension(original_filename)
     unique_id = str(uuid.uuid4())
-    return f'{unique_id}{ext}'
+    return f"{unique_id}{ext}"
 
 
 def save_file(filename: str, file_content: bytes) -> Tuple[bool, str]:
@@ -136,13 +136,13 @@ def save_file(filename: str, file_content: bytes) -> Tuple[bool, str]:
         new_filename = generate_unique_filename(original_name)
         file_path = os.path.join(Config.UPLOAD_FOLDER, new_filename)
 
-        with open(file_path, 'wb') as f:
+        with open(file_path, "wb") as f:
             f.write(file_content)
 
         log_success(f'Файл сохранён: {new_filename} (оригинал: "{original_name}")')
         return True, new_filename
     except Exception as e:
-        error_msg = f'Ошибка сохранения файла: {e}'
+        error_msg = f"Ошибка сохранения файла: {e}"
         log_error(error_msg)
         return False, error_msg
 
@@ -163,10 +163,10 @@ def delete_file(filename: str) -> bool:
 
         if os.path.exists(file_path):
             os.remove(file_path)
-            log_success(f'Файл удалён: {safe_name}')
+            log_success(f"Файл удалён: {safe_name}")
             return True
-        log_error(f'Файл для удаления не найден: {safe_name}')
+        log_error(f"Файл для удаления не найден: {safe_name}")
         return False
     except Exception as e:
-        log_error(f'Ошибка удаления файла: {safe_name}: {e}')
+        log_error(f"Ошибка удаления файла: {safe_name}: {e}")
         return False

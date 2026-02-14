@@ -26,27 +26,27 @@ def create_app() -> Flask:
         Готовый к запуску экземпляр Flask-приложения.
     """
     app = Flask(__name__)
-    app.config['SECRET_KEY'] = Config.SECRET_KEY
-    app.config['MAX_CONTENT_LENGTH'] = Config.MAX_CONTENT_LENGTH
+    app.config["SECRET_KEY"] = Config.SECRET_KEY
+    app.config["MAX_CONTENT_LENGTH"] = Config.MAX_CONTENT_LENGTH
 
     CORS(app)
 
     with app.app_context():
-        print('Инициализация рабочих директорий...')
+        print("Инициализация рабочих директорий...")
         ensure_directories()
-        print('Инициализация пула соединений с БД...')
+        print("Инициализация пула соединений с БД...")
         Database.init_pool()
-        print('Инициализация схемы БД...')
+        print("Инициализация схемы БД...")
         Database.init_db()
-        print('Настройка логирования...')
+        print("Настройка логирования...")
         setup_logging()
 
     register_routes(app)
-    print('Маршруты зарегистрированы.')
+    print("Маршруты зарегистрированы.")
     return app
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("Запуск Flask-сервера...")
     flask_app = create_app()
-    flask_app.run(debug=bool(Config.DEBUG), host='0.0.0.0', port=8000)
+    flask_app.run(debug=bool(Config.DEBUG), host="0.0.0.0", port=8000)

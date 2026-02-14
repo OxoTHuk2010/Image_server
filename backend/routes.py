@@ -4,8 +4,15 @@ from werkzeug.utils import secure_filename
 from config import Config
 from database import Database
 from models import Image
-from utils import (delete_file, format_file_size, get_file_extension,
-                   is_allowed_extension, log_error, log_success, save_file)
+from utils import (
+    delete_file,
+    format_file_size,
+    get_file_extension,
+    is_allowed_extension,
+    log_error,
+    log_success,
+    save_file,
+)
 
 
 def register_routes(app: Flask):
@@ -16,17 +23,17 @@ def register_routes(app: Flask):
         app: Экземпляр Flask-приложения.
     """
 
-    @app.get('/')
+    @app.get("/")
     def index():
         """Отдаёт главную HTML-страницу."""
-        return render_template('index.html')
+        return render_template("index.html")
 
     @app.get("/api/health")
     def health():
         """Проверяет работоспособность сервиса."""
         return jsonify({"ok": True}), 200
 
-    @app.post('/api/upload')
+    @app.post("/api/upload")
     def upload_file():
         """
         Обрабатывает загрузку файла изображения.
@@ -57,44 +64,59 @@ def register_routes(app: Flask):
 
             if file_size > Config.MAX_CONTENT_LENGTH:
                 max_size = format_file_size(Config.MAX_CONTENT_LENGTH)
-                return jsonify({'error': f"Файл слишком большой. Максимальный размер файла {max_size}"}), 400
+                return (
+                    jsonify(
+                        {
+                            "error": f"Файл слишком большой. Максимальный размер файла {max_size}"
+                        }
+                    ),
+                    400,
+                )
 
             success, result = save_file(file.filename, file_data)
             if not success:
-                return jsonify({'error': f"Ошибка сохранения файла: {result}"}), 500
+                return jsonify({"error": f"Ошибка сохранения файла: {result}"}), 500
 
             new_filename = result
-            file_type = get_file_extension(file.filename).replace('.', '')
+            file_type = get_file_extension(file.filename).replace(".", "")
             image = Image(
                 filename=new_filename,
                 original_name=secure_filename(file.filename),
                 size=file_size,
-                file_type=file_type
+                file_type=file_type,
             )
 
             success, image_id = Database.save_image(image)
             if not success:
                 delete_file(new_filename)
-                return jsonify({'error': "Ошибка сохранения метаданных в БД"}), 500
+                return jsonify({"error": "Ошибка сохранения метаданных в БД"}), 500
 
-            log_success(f'Изображение сохранено: {new_filename}')
+            log_success(f"Изображение сохранено: {new_filename}")
 
-            return jsonify({
-                'success': True,
-                'message': "Файл успешно сохранён",
-                'image': {
-                    'id': image_id,
-                    'filename': new_filename,
-                    'original_name': secure_filename(file.filename),
-                    'size': file_size,
-                    'size_human': format_file_size(file_size),
-                    'url': f"/images/{new_filename}",
-                }
-            }), 201
+            return (
+                jsonify(
+                    {
+                        "success": True,
+                        "message": "Файл успешно сохранён",
+                        "image": {
+                            "id": image_id,
+                            "filename": new_filename,
+                            "original_name": secure_filename(file.filename),
+                            "size": file_size,
+                            "size_human": format_file_size(file_size),
+                            "url": f"/images/{new_filename}",
+                        },
+                    }
+                ),
+                201,
+            )
 
         except Exception as e:
             log_error(f"Ошибка загрузки файла: {e}", exc_info=True)
-            return jsonify({'error': "Внутренняя ошибка сервера при загрузке файла"}), 500
+            return (
+                jsonify({"error": "Внутренняя ошибка сервера при загрузке файла"}),
+                500,
+            )
 
     @app.delete("/api/images/<int:image_id>")
     def delete_image(image_id: int):
@@ -117,11 +139,18 @@ def register_routes(app: Flask):
         if not delete_file(filename):
             # В этом случае запись в БД уже удалена. Это пограничный случай,
             # который требует внимания администратора (файл-сирота на диске).
-            return jsonify({"error": "Не удалось удалить файл с диска, хотя запись в БД удалена"}), 500
+            return (
+                jsonify(
+                    {
+                        "error": "Не удалось удалить файл с диска, хотя запись в БД удалена"
+                    }
+                ),
+                500,
+            )
 
         return jsonify({"success": True, "message": "Изображение удалено"}), 200
 
-    @app.get('/api/images')
+    @app.get("/api/images")
     def list_images():
         """
         Возвращает постраничный список загруженных изображений.
@@ -137,16 +166,23 @@ def register_routes(app: Flask):
 
             # Валидация параметров пагинации
             page = max(1, page)
-            per_page = min(max(per_page, Config.MIN_ITEMS_PER_PAGE), Config.MAX_DISPLAY_ITEMS)
+            per_page = min(
+                max(per_page, Config.MIN_ITEMS_PER_PAGE), Config.MAX_DISPLAY_ITEMS
+            )
 
             images, total = Database.get_images(page, per_page)
-            return jsonify({
-                "success": True,
-                "images": [img.to_dict() for img in images],
-                "total": total,
-                "page": page,
-                "per_page": per_page,
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "success": True,
+                        "images": [img.to_dict() for img in images],
+                        "total": total,
+                        "page": page,
+                        "per_page": per_page,
+                    }
+                ),
+                200,
+            )
         except (ValueError, TypeError):
             return jsonify({"error": "Неверные параметры пагинации"}), 400
 

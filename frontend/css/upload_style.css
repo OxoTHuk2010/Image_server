@@ -104,7 +104,7 @@ body {
     font-size: 14px;
     text-align: center;
     color: #adc0f8;
-    overflow-wrap: break-word; 
+    overflow-wrap: break-word;
 }
 
 input[type="file"]{
